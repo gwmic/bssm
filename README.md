@@ -1,16 +1,16 @@
-# Gaze Detection Example
+# 🎳 Bowling Segmentation Stat Manager (BSSM) 🎳
 
 ## 👋 Hello
 
-This repository shows how to use the [Roboflow Inference](https://github.com/roboflow/inference) gaze detection API.
+This is the repository for BSSM.
 
 ## 💻 Getting Started
 
 First, clone this repository and navigate to the project folder:
 
 ```bash
-git clone https://github.com/roboflow/inference
-cd inference/examples/gaze-detection
+git clone https://github.com/gwmic/bssm
+cd bssm
 ```
 
 Next, set up a Python environment and install the required project dependencies:
@@ -41,10 +41,10 @@ Before running the inference script, ensure that the `API_KEY` is set as an envi
   
 Replace `your_api_key_here` with your Roboflow API key. [Learn how to retrieve your Roboflow API key](https://docs.roboflow.com/api-reference/authentication#retrieve-an-api-key).
 
-## 🎬 Run Inference
+## 🎬 Run BSSM
 
-To use the gaze detection script, run the following command:
+To use bssm, run the following command:
 
 ```bash
-python gaze.py
+python3 core.py
 ```
