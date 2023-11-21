@@ -1,2 +1,0 @@
-export API_KEY=IQvYLHUhWtgWqompoERt
-python core.py
