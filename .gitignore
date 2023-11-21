@@ -1,3 +1,5 @@
 venv/
 output.mp4
 bssm.sh
+__pycache__/
+logo.png
