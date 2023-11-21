@@ -1,26 +1,27 @@
 import cv2
-import numpy as np
+import time
 from collections import deque
 
 class VideoBuffer:
-    def __init__(self, fps, frame_size):
-        self.buffer = deque(maxlen=fps * 3)  # Store last 3 seconds
-        self.frame_size = frame_size
+    def __init__(self, buffer_time, fps, frame_size):
+        self.buffer = deque(maxlen=int(buffer_time * fps))
         self.fps = fps
+        self.frame_size = frame_size
 
     def add_frame(self, frame):
         self.buffer.append(frame)
 
-    def get_last_seconds(self, seconds):
-        # Get last 'seconds' seconds of frames
-        num_frames = seconds * self.fps
-        return list(self.buffer)[-num_frames:]
+    def get_buffer(self):
+        return list(self.buffer)
 
-def capture_video(start_flag, stop_flag):
+def captureBuffer(flag):
+    # Initialize the webcam
     cap = cv2.VideoCapture(0)
     fps = cap.get(cv2.CAP_PROP_FPS)  # Get the FPS of the webcam
     frame_size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-    video_buffer = VideoBuffer(int(fps), frame_size)
+
+    # Initialize the buffer
+    video_buffer = VideoBuffer(3, fps, frame_size)  # 2 seconds buffer
 
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -34,16 +35,16 @@ def capture_video(start_flag, stop_flag):
 
         video_buffer.add_frame(frame)
 
-        if start_flag() and not recording:
+        if flag() and not recording:
             recording = True
             out = cv2.VideoWriter('output.mp4', fourcc, fps, frame_size)
-            for f in video_buffer.get_last_seconds(2):  # Get the last 2 seconds
+            for f in video_buffer.get_buffer():  # Write the last 2 seconds
                 out.write(f)
 
         if recording:
             out.write(frame)
 
-        if stop_flag() and recording:
+        if not flag() and recording:
             break
 
     # Release everything when done
@@ -52,8 +53,28 @@ def capture_video(start_flag, stop_flag):
         out.release()
     cv2.destroyAllWindows()
 
-# Example usage with flags
-start_flag = lambda: input("Press Enter to start recording (or type 'start')...") == 'start'
-stop_flag = lambda: input("Press Enter to stop recording (or type 'stop')...") == 'stop'
+'''
+# Example flag function
+flag_state = False
+def flag():
+    global flag_state
+    return flag_state
 
-capture_video(start_flag, stop_flag)
+# Example usage with the flag
+# The flag function can be replaced with any condition you want to use
+import threading
+
+def simulate_flag_change():
+    global flag_state
+    time.sleep(5)  # Wait for 5 seconds then start recording
+    print("started")
+    flag_state = True
+    time.sleep(5)  # Record for 5 seconds
+    flag_state = False
+
+# Start the flag simulation in another thread
+threading.Thread(target=simulate_flag_change).start()
+
+# Start video capture
+captureBuffer(flag)
+'''
