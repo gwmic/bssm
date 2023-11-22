@@ -8,7 +8,7 @@ import modules as mod
 import videobuffer as vb
 import shot as st
 
-source = 1 #Source num of webcam
+source = 0 #Source num of webcam
 
 # manages all global data as data object
 class DataMan:
@@ -33,7 +33,7 @@ class DataMan:
         # Initialize all counter attributes to zero
         self.count = self.x1 = self.x2 = self.x3 = self.x4 = 0
         self.percentage = self.y1 = self.y2 = self.y3 = self.y4 = 0
-        self.shotLimit = self.frameLimit = self.frameCount = self.frameRender = self.ballCount = 0
+        self.shotLimit = self.frameLimit = self.frameCount = self.frameRender = self.ballCount = self.fps = 0
 
 data = DataMan(source)
 
@@ -90,7 +90,7 @@ def renderWrapper(data):
                 elif np.size(frameBallArr) > 1:
                     print("Error: more than one ball detected on the lane")
 
-            if (frame - data.frameLimit) > 60:  # if 60 frames (2 sec) has elapsed without a ball detection on the lane, the shot will be exported to
+            if (frame - data.frameLimit) > data.fps*2:  # if 2 sec has elapsed without a ball detection on the lane, the shot will be exported to
                 if data.ballCount >= 2:
                     data.done = False
                     data.vidFlag = False
@@ -114,6 +114,7 @@ def renderWrapper(data):
                     )
 
                     data.ballCount = 0
+                    data.scan = False
                     thread = threading.Thread(target=vb.captureBuffer, args=(data,))
                     thread.start()
 
@@ -152,13 +153,17 @@ def masterWrapper(data):
             print("\n")
 
         else:
-            data.percentage = frame/(data.frameCount - 10)
-            if data.percentage > 1.0:
+            data.percentage = frame/(data.frameCount-5)
+            if data.percentage >= 1.0:
                 data.percentage = 1.0
-            if data.percentage < 1.0:
+            elif data.percentage > 0.95:
+                filled_length = int(50 * data.percentage)  # Calculate the number of 'filled' characters in the bar
+                bar = '█' * 50  # Create the bar string
+                print(f"\rProgress: |{bar}| {(100):.2f}%", end='\r')  # Print the progress bar with percentage
+            elif data.percentage < 1.0:
                 filled_length = int(50 * data.percentage)  # Calculate the number of 'filled' characters in the bar
                 bar = '█' * filled_length + '-' * (50 - filled_length)  # Create the bar string
-                print(f"\rProgress: |{bar}| {data.percentage*100:.2f}%", end='\r')  # Print the progress bar with percentage
+                print(f"\rProgress: |{bar}| {(data.percentage*100):.2f}%", end='\r')  # Print the progress bar with percentage
 
         if "ball" in str(predictions) and not data.scan:  # checks if a ball has been detected in a given frame 
             ballPosArr = sv.Detections.from_roboflow(predictions).xyxy[np.where(idArr == 0)]  # creates an array of min/max values for the bounding boxes of each ball in a given frame

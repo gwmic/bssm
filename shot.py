@@ -42,10 +42,10 @@ class Shot:
         self.breakPtBoard, self.breakPtDis = self.calculateBreakPt(self.polyReal)
         self.foulLine = self.calculateBoard(self.polyReal, 0)
         self.entryBoard = self.calculateBoard(self.polyReal, 671)
-        self.launchAng = self.calculateAng(self.polyReal, 0)
-        self.impactAng = self.calculateAng(self.polyReal, 671)
-        self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 190)
-        self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 510, 670)
+        self.launchAng = self.calculateAng(self.polyReal, 0, -1)
+        self.impactAng = self.calculateAng(self.polyReal, 671, 1)
+        self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 190, data)
+        self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 510, 670, data)
         self.pts = pts  # Storing the processed points for potential future use
 
     @staticmethod
@@ -94,13 +94,13 @@ class Shot:
         return '%.1f'%(poly(distance))
 
     @staticmethod
-    def calculateAng(poly, distance):
-        return '%.1f'%(-mod.tan(poly, distance))
+    def calculateAng(poly, distance, multiplier):
+        return '%.1f'%(multiplier * mod.tan(poly, distance))
 
     @staticmethod
-    def calculateSpeed(pts, poly, xReal, start, end):
+    def calculateSpeed(pts, poly, xReal, start, end, data):
         # Define constants for clarity
-        FPSTOHOURS = 120.0  # Frames per second to hours conversion factor
+        FPSTOHOURS = 3600/data.fps  # Frames per second to hours conversion factor
         BOARDSTOMILES = (60 / 671) / 5280  # Convert bowling lane boards to miles
         #                ^^^^^^^^ 60 feet are in a 671 boards (length of lane)
 

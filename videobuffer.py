@@ -17,11 +17,12 @@ def captureBuffer(data):
 
     # Initialize the webcam
     cap = cv2.VideoCapture(data.source)
-    fps = cap.get(cv2.CAP_PROP_FPS)  # Get the FPS of the webcam
+    if data.fps == 0:
+        data.fps = cap.get(cv2.CAP_PROP_FPS)  # Get the FPS of the webcam
     frame_size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     # Initialize the buffer
-    video_buffer = VideoBuffer(2, fps, frame_size)  # 2 seconds buffer
+    video_buffer = VideoBuffer(2, data.fps, frame_size)  # 2 seconds buffer
 
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -37,7 +38,7 @@ def captureBuffer(data):
 
         if data.vidFlag and not(recording):
             recording = True
-            out = cv2.VideoWriter('output.mp4', fourcc, fps, frame_size)
+            out = cv2.VideoWriter('output.mp4', fourcc, data.fps, frame_size)
             for f in video_buffer.get_buffer():  # Write the last 2 seconds
                 out.write(f)
 
