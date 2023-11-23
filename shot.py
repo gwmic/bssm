@@ -18,22 +18,18 @@ class LaneCord:
         realTransformedPoint = cv2.perspectiveTransform(point, data.realMatrix)
         
         # Assigning transformed coordinates directly
-        self.bssmx, self.bssmy = transformedPoint[0][0][1], transformedPoint[0][0][0]
-        self.realx, self.realy = realTransformedPoint[0][0][1], realTransformedPoint[0][0][0]
+        self.bssmx, self.bssmy = 2457 - transformedPoint[0][0][1], transformedPoint[0][0][0]
+        self.realx, self.realy = 671 - realTransformedPoint[0][0][1], realTransformedPoint[0][0][0]
         self.frame = ball.frame
 
 class Shot:
     def __init__(self, ballArr, data):
+
         pts = [LaneCord(ball, data) for ball in ballArr]
         filteredpts = [(cord.bssmx, cord.bssmy, cord.realx, cord.realy) 
-                        for cord in pts if cord.bssmx >= 0 and cord.bssmy >= 0]
+                        for cord in pts if cord.realx >= 25 and cord.realy >= 0] #filters points to only be past the dots on the lane
 
         xBssm, yBssm, xReal, yReal = zip(*filteredpts)
-
-        xBssm = [0, 819, 1638, 2457]
-        yBssm = [173, 61, 33, 89]
-        xReal = [0, 224, 447, 671]
-        yReal = [37, 13, 7, 19]
 
         self.polyBssm = self.calculatePoly(xBssm, yBssm)
         self.polyReal = self.calculatePoly(xReal, yReal)
@@ -42,10 +38,10 @@ class Shot:
         self.breakPtBoard, self.breakPtDis = self.calculateBreakPt(self.polyReal)
         self.foulLine = self.calculateBoard(self.polyReal, 0)
         self.entryBoard = self.calculateBoard(self.polyReal, 671)
-        self.launchAng = self.calculateAng(self.polyReal, 0, -1)
-        self.impactAng = self.calculateAng(self.polyReal, 671, 1)
-        self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 190, data)
-        self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 510, 670, data)
+        self.launchAng = self.calculateAng(self.polyReal, 0, 1)
+        self.impactAng = self.calculateAng(self.polyReal, 671, -1)
+        self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 350, 670, 1.0, data)
+        self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 350, 1.0, data)
         self.pts = pts  # Storing the processed points for potential future use
 
     @staticmethod
@@ -68,9 +64,9 @@ class Shot:
 
         if not roots:
             # Handle the case where no valid roots are found
-            raise ValueError("No valid roots found within the specified range.")
+            return "ERR1"
 
-        return '%.1f' % poly(roots[0])  # Return the first valid root
+        return '%.1f' % (39 - poly(roots[0]))  # Return the first valid root
 
     @staticmethod
     def calculateBreakPt(poly):
@@ -82,25 +78,25 @@ class Shot:
 
         if minx is None:
             # Handle the case where no local minimum is found
-            raise ValueError("No valid local minimum found within the specified range.")
-
+            return "ERR1"
+        
         # Calculate and return the break point board and distance
-        break_pt_board = '%.1f' % miny
+        break_pt_board = '%.1f' % (39 - miny)
         break_pt_distance = '%.1f' % (minx * SCALEFACTOR)
         return break_pt_board, break_pt_distance
 
     @staticmethod
     def calculateBoard(poly, distance):
-        return '%.1f'%(poly(distance))
+        return '%.1f'%(39 - poly(distance))
 
     @staticmethod
     def calculateAng(poly, distance, multiplier):
         return '%.1f'%(multiplier * mod.tan(poly, distance))
 
     @staticmethod
-    def calculateSpeed(pts, poly, xReal, start, end, data):
+    def calculateSpeed(pts, poly, xReal, start, end, multiplier, data):
         # Define constants for clarity
-        FPSTOHOURS = 3600/data.fps  # Frames per second to hours conversion factor
+        FRAMESTOHOURS = (1/data.fps)/3600  # Frames per second to hours conversion factor
         BOARDSTOMILES = (60 / 671) / 5280  # Convert bowling lane boards to miles
         #                ^^^^^^^^ 60 feet are in a 671 boards (length of lane)
 
@@ -108,11 +104,22 @@ class Shot:
         endIndex = mod.findClosest(xReal, end)
 
         if startIndex == endIndex:
-            raise ValueError("Start and end points are too close or identical.")
+            return "ERR1"
 
-        start_x = xReal[startIndex]
-        end_x = xReal[endIndex]
-        time_hours = (pts[endIndex].frame - pts[startIndex].frame) * FPSTOHOURS
-        distance_miles = mod.arcLength(poly, start_x, end_x) * BOARDSTOMILES
+        startx = xReal[startIndex]
+        endx = xReal[endIndex]
 
-        return '%.1f' % (distance_miles / time_hours)
+        if endIndex > np.size(pts):
+            return "ERR2"
+        
+        timehours = (pts[endIndex].frame - pts[startIndex].frame) * FRAMESTOHOURS
+        if timehours < 0:
+            timehours = (pts[endIndex].frame + (data.frameCount - pts[startIndex].frame)) * FRAMESTOHOURS
+        print("Time:", timehours)
+        distancemiles = mod.arcLength(poly, startx, endx) * BOARDSTOMILES
+        print("Distance:", distancemiles)
+
+        if timehours == 0:
+            return "ERR3"
+
+        return '%.1f' % ((distancemiles / timehours)*(671/773))

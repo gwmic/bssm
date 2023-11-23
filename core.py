@@ -8,7 +8,7 @@ import modules as mod
 import videobuffer as vb
 import shot as st
 
-source = 0 #Source num of webcam
+source = 1 #Source num of webcam
 
 # manages all global data as data object
 class DataMan:
@@ -65,159 +65,157 @@ def click_event(event, x, y, flags, data):
                 data.laneSet = True
 
                 data.frameLimit = data.frameRender
-
+                
                 print("\nREADY")
 
 def renderWrapper(data):
     def render(predictions, image):
+        # Extract class IDs and positions from predictions
+        detections = sv.Detections.from_roboflow(predictions)
+        idArr = detections.class_id
+        frame = mod.extractframe(predictions)
 
-        idArr = sv.Detections.from_roboflow(predictions).class_id  # creates an array of all class_id of detections in a given frame
-        frame = mod.extractframe(predictions)  # define current frame
-
+        # Process only if lane is set
         if data.laneSet:
-            if "ball" in str(predictions):  # checks if a ball has been detected in a given frame
-                ballPosArr = sv.Detections.from_roboflow(predictions).xyxy[np.where(idArr == 0)]  # creates an array of min/max values for the bounding boxes of each ball in a given frame
+            # Process only if a ball is detected
+            if "ball" in str(predictions):
+                ballPosArr = detections.xyxy[np.where(idArr == 0)]
+                frameBallArr = [st.Ball(element, frame) for element in ballPosArr]
+                frameBallArr = [ball for ball in frameBallArr if mod.inside(data.poly, ball.x, ball.y)]
 
-                frameBallArr = [st.Ball(element, frame) for element in ballPosArr]  # create a ball object for each element in posArr — passing in current frame_id 
-
-                frameBallArr =  [ball for ball in frameBallArr if mod.inside(data.poly, ball.x, ball.y)]  # removes balls from frameBallArr if they are not on the lane 
-
-                if np.size(frameBallArr) == 1:  # checks if ball is on lane, then sets frameLimit = frame
+                # Handle ball count and set conditions
+                ball_count = np.size(frameBallArr)
+                if ball_count == 1:
                     data.frameLimit = frame
-                    data.vidFlag = True 
-                    data.ballCount += np.size(frameBallArr)
-                
-                elif np.size(frameBallArr) > 1:
+                    data.vidFlag = True
+                    data.ballCount += ball_count
+                elif ball_count > 1:
                     print("Error: more than one ball detected on the lane")
 
-            if (frame - data.frameLimit) > data.fps*2:  # if 2 sec has elapsed without a ball detection on the lane, the shot will be exported to
-                if data.ballCount >= 2:
-                    data.done = False
-                    data.vidFlag = False
-                    
-                    while not data.done:
-                        time.sleep(0.1)  # To prevent a tight loop, we sleep for a short duration
+            # Check for time elapsed without ball detection
+            if (frame - data.frameLimit) > data.fps * 2 and data.ballCount >= 2:
+                data.done = False
+                data.vidFlag = False
 
-                    time.sleep(0.5)
-                    data.frameCount = 0
+                while not data.done:
+                    time.sleep(0.1)
 
-                    customMaster = masterWrapper(data)
+                time.sleep(0.5)
+                data.frameCount = 0
 
-                    inference.Stream(
-                        source="output.mp4",
-                        model="bowling-model/6",
-                        confidence=0.1,
-                        iou_threshold=0.01,
-                        output_channel_order="BGR",
-                        use_main_thread=True,
-                        on_prediction=customMaster
-                    )
+                customMaster = masterWrapper(data)
+                inference.Stream(
+                    source="output.mp4",
+                    model="bowling-model/6",
+                    confidence=0.01,
+                    iou_threshold=0.01,
+                    output_channel_order="BGR",
+                    use_main_thread=True,
+                    on_prediction=customMaster,
+                    enforce_fps=True
+                )
 
-                    data.ballCount = 0
-                    data.scan = False
-                    thread = threading.Thread(target=vb.captureBuffer, args=(data,))
-                    thread.start()
+                data.ballCount = 0
+                data.scan = False
+                thread = threading.Thread(target=vb.captureBuffer, args=(data,))
+                thread.start()
 
-                    print("\nREADY")
+                print("\nREADY")
 
-            image = cv2.polylines(image, [data.laneArr], False, (0, 165, 255), 3)  # draws orange lane
-
-        else:  # if lane not defined then call click_event
-            cv2.setMouseCallback("Camera", click_event, data) 
+            # Draw lane and set callback if lane not defined
+            image = cv2.polylines(image, [data.laneArr], False, (0, 165, 255), 3)
+        else:
+            cv2.setMouseCallback("Camera", click_event, data)
             data.frameRender = frame
 
-        image = data.annotator.annotate(
-            scene=image, 
-            detections=sv.Detections.from_roboflow(predictions)
-        )
-
-        cv2.imshow("Camera", image)  # update Camera window
+        # Annotate and display image
+        image = data.annotator.annotate(scene=image, detections=detections)
+        cv2.imshow("Camera", image)
         cv2.waitKey(1)
 
-        size = np.size(data.shotArr)  # calls bssm function if a shot has been saved
-        if size >= 1:  
-            if not(size == data.shotLimit):
-                bssm(data)
-                data.shotLimit = size
+        # Process saved shots
+        size = np.size(data.shotArr)
+        if size >= 1 and size != data.shotLimit:
+            bssm(data)
+            data.shotLimit = size
+
     return render
 
 def masterWrapper(data):
     def master(predictions, image):
+        # Extract class IDs and positions from predictions
+        detections = sv.Detections.from_roboflow(predictions)
+        idArr = detections.class_id
+        frame = mod.extractframe(predictions)
 
-        idArr = sv.Detections.from_roboflow(predictions).class_id  # creates an array of all class_id of detections in a given frame
-        frame = mod.extractframe(predictions)  # define current frame
-
+        # Initialize or update progress bar based on frame count
         if data.frameCount == 0:
             cap = cv2.VideoCapture("output.mp4")
             data.frameCount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             print("\n")
+        elif not data.scan:
+            data.percentage = min(frame / (data.frameCount), 1.0)
+            filled_length = int(50 * data.percentage)
+            bar = '█' * filled_length + '-' * (50 - filled_length)
+            print(f"\rProgress: |{bar}| {(data.percentage*100):.2f}%", end='\r')  # Print the progress bar with percentage
 
-        else:
-            data.percentage = frame/(data.frameCount-5)
-            if data.percentage >= 1.0:
-                data.percentage = 1.0
-            elif data.percentage > 0.95:
-                filled_length = int(50 * data.percentage)  # Calculate the number of 'filled' characters in the bar
-                bar = '█' * 50  # Create the bar string
-                print(f"\rProgress: |{bar}| {(100):.2f}%", end='\r')  # Print the progress bar with percentage
-            elif data.percentage < 1.0:
-                filled_length = int(50 * data.percentage)  # Calculate the number of 'filled' characters in the bar
-                bar = '█' * filled_length + '-' * (50 - filled_length)  # Create the bar string
-                print(f"\rProgress: |{bar}| {(data.percentage*100):.2f}%", end='\r')  # Print the progress bar with percentage
-
+        # Detect balls and store their positions
         if "ball" in str(predictions) and not data.scan:  # checks if a ball has been detected in a given frame 
-            ballPosArr = sv.Detections.from_roboflow(predictions).xyxy[np.where(idArr == 0)]  # creates an array of min/max values for the bounding boxes of each ball in a given frame
-            frameBallArr = [st.Ball(element, frame) for element in ballPosArr]  # create a ball object for each element in posArr — passing in current frame_id 
-            frameBallArr =  [ball for ball in frameBallArr if mod.inside(data.poly, ball.x, ball.y)]  # removes balls from frameBallArr if they are not on the lane 
-            data.ballArr = np.append(data.ballArr, frameBallArr)  
+            ballPosArr = detections.xyxy[np.where(idArr == 0)]
+            frameBallArr = [st.Ball(element, frame) for element in ballPosArr]
+            frameBallArr = [ball for ball in frameBallArr if mod.inside(data.poly, ball.x, ball.y)]  # create a ball object for each element in posArr — passing in current frame_id
+            data.ballArr = np.append(data.ballArr, frameBallArr)
 
+        # Handle creation and storage of shot data
         if frame > 5 and data.percentage >= 1.0 and not data.scan:
             shot = st.Shot(data.ballArr, data)
             data.shotArr = np.append(data.shotArr, shot)
-            print("\n\nShot #", np.size(data.shotArr), " Saved With ", np.size(data.ballArr), "Cords")
+            print(f"\n\nShot # {np.size(data.shotArr)} Saved With {np.size(data.ballArr)} Cords")
             data.ballArr = np.array([])
             data.scan = True
+
     return master
            
-def bssm(data): 
+def bssm(data):
     image = cv2.imread("background.png")
     recentShot = data.shotArr[-1]
     polyBssm = recentShot.polyBssm
 
-    # Generate curve points
+    # Generate curve points more efficiently
     curve = np.array([], dtype=np.int32)
     for x in range(0, 2457):
         y = int(polyBssm(x))
-        curve = np.append(curve, [x, 1150 - y])
+        curve = np.append(curve, [x, 970 + y])
 
     curveReshaped = curve.reshape(-1, 2)
     curve = np.array([curveReshaped], dtype=np.int32)
 
+    # Draw the curve on the image
     image = cv2.polylines(image, [curve], False, (252, 255, 63), 2)
 
-    # Shift the previous shots' information down
+    # Draw information for previous shots
     for idx, shot in enumerate(data.shotArr[:-1]):
         mod.drawShotInfo(image, shot, 173 + 86 * (idx + 1), np.size(data.shotArr) - idx - 1)
 
-    # Draw the most recent shot's information at y = 173
+    # Draw the most recent shot's information
     mod.drawShotInfo(image, recentShot, 173, np.size(data.shotArr))
 
     # Update the y-coordinate for the next shot
     data.currentY += 86
 
-    cv2.imshow("BSSM", image)  # update BSSM window
+    # Display the updated image
+    cv2.imshow("BSSM", image)
     cv2.waitKey(1)
 
 thread = threading.Thread(target=vb.captureBuffer, args=(data,))
 thread.start()
 
-customRender = renderWrapper(data)
-
 # run render function for each frame
+customRender = renderWrapper(data)
 inference.Stream(
     source=data.source,
     model="bowling-model/6",
-    confidence=0.01,
+    confidence=0.1,
     iou_threshold=0.01,
     output_channel_order="BGR",
     use_main_thread=True,
