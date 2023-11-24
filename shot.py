@@ -30,21 +30,23 @@ class Shot:
         pts = [LaneCord(ball, data) for ball in ballArr]
         filteredpts = [(cord.bssmx, cord.bssmy, cord.realx, cord.realy) 
                         for cord in pts if cord.realx >= 25 and cord.realy >= 0] #filters points to only be past the dots on the lane
+        if not filteredpts:
+            self.polyBssm = self.polyReal = self.arrows = self.breakPtBoard = self.breakPtDis = self.foulLine = self.entryBoard = self.launchAng = self.impactAng = self.launchSpeed = self.entrySpeed = "ERR0"
+        else:
+            xBssm, yBssm, xReal, yReal = zip(*filteredpts)
 
-        xBssm, yBssm, xReal, yReal = zip(*filteredpts)
+            self.polyBssm = self.calculatePoly(xBssm, yBssm)
+            self.polyReal = self.calculatePoly(xReal, yReal)
 
-        self.polyBssm = self.calculatePoly(xBssm, yBssm)
-        self.polyReal = self.calculatePoly(xReal, yReal)
-
-        self.arrows = self.calculateArrows(self.polyReal)
-        self.breakPtBoard, self.breakPtDis = self.calculateBreakPt(self.polyReal)
-        self.foulLine = self.calculateBoard(self.polyReal, 0)
-        self.entryBoard = self.calculateBoard(self.polyReal, 671)
-        self.launchAng = self.calculateAng(self.polyReal, 0, 1)
-        self.impactAng = self.calculateAng(self.polyReal, 671, -1)
-        self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.78, data)
-        self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.75, data)
-        self.pts = pts  # Storing the processed points for potential future use
+            self.arrows = self.calculateArrows(self.polyReal)
+            self.breakPtBoard, self.breakPtDis = self.calculateBreakPt(self.polyReal)
+            self.foulLine = self.calculateBoard(self.polyReal, 0)
+            self.entryBoard = self.calculateBoard(self.polyReal, 671)
+            self.launchAng = self.calculateAng(self.polyReal, 0, 1)
+            self.impactAng = self.calculateAng(self.polyReal, 671, -1)
+            self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.73, data)
+            self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.71, data)
+            self.pts = pts  # Storing the processed points for potential future use
 
     @staticmethod
     def calculatePoly(x, y):

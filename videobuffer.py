@@ -3,6 +3,7 @@ from collections import deque
 import numpy as np
 from datetime import datetime
 import os
+import modules as mod
 
 class VideoBuffer:
     def __init__(self, buffer_time, fps, frame_size):
@@ -120,11 +121,18 @@ def cropVid(inputPath, outputPath, startRemove, endRemove, data):
             # Write the cropped
             out.write(croppedFrame)
 
+            # Calculate and update progress
+            progress = (((i - startRemove) / (totalFrames - startRemove - endRemove))*(4/7) + (3/7))
+            mod.cliProgress(progress, "Video Preprocess")
+
+
         else:
             print("Error reading frame.")
             break
 
     # Release everything when job is finished
+    mod.cliProgress(1, "Video Preprocess")
+    print("\n\n")
     cap.release()
     out.release()
 
@@ -159,8 +167,9 @@ def processVideo(input_file, output_file):
     out = cv2.VideoWriter(output_file, fourcc, frame_rate, (frame_width, frame_height))
 
     # Write the last 60 frames to the start of the new video
-    for frame in last_60_frames:
+    for frame_index, frame in enumerate(last_60_frames):
         out.write(frame)
+        mod.cliProgress(((frame_index + 1) / total_frames)*(3/7), "Video Preprocess")
 
     # Reset to the start of the video
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -170,9 +179,13 @@ def processVideo(input_file, output_file):
         ret, frame = cap.read()
         if ret:
             out.write(frame)
+            mod.cliProgress(((i + 61) / total_frames)*(3/7), "Video Preprocess")
         else:
             print("Error reading frame.")
             break
+
+    # Final progress update to ensure 100% is shown at the end
+    mod.cliProgress(3/7, "Video Preprocess")
 
     # Release everything
     cap.release()

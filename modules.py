@@ -109,3 +109,8 @@ def drawProgressBar(img, progress, bar_height, bar_color, text_color, font, font
     text_y = (bar_height + text_size[1]) // 2
     cv2.putText(img, text, (text_x, text_y +1), font, font_scale, bar_color, thickness + 3)
     cv2.putText(img, text, (text_x, text_y +1), font, font_scale, text_color, thickness)
+
+def cliProgress(percentage, string):
+    filled_length = int(50 * percentage)
+    bar = '█' * filled_length + '-' * (50 - filled_length)
+    print(f"\r{string}: |{bar}| {(percentage*100):.2f}%", end='\r') # save the progress bar with percentage

@@ -47,7 +47,7 @@ def renderWrapper(data):
                 inference.Stream(
                     source=".output_cropped.mp4",
                     model="bowling-model/6",
-                    confidence=0.1,
+                    confidence=data.confidenceProcess,
                     iou_threshold=0.01,
                     output_channel_order="BGR",
                     use_main_thread=True,
@@ -94,11 +94,7 @@ def masterWrapper(data):
             data.frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)/2)
             print("\n")
         elif not data.scan:
-            data.percentage = min(frame / (data.frameCount - 1), 1.0)
-            if not data.showProcess:
-                filled_length = int(50 * data.percentage)
-                bar = '█' * filled_length + '-' * (50 - filled_length)
-                print(f"\rProgress: |{bar}| {(data.percentage*100):.2f}%", end='\r') # save the progress bar with percentage
+            data.percentage = min(frame / (data.frameCount - 2), 1.0)
 
         # Detect balls and store their positions
         if "ball" in str(predictions) and not data.scan:  # checks if a ball has been detected in a given frame 
@@ -123,5 +119,6 @@ def masterWrapper(data):
             image = data.annotator.annotate(scene=image, detections=detections)
             cv2.imshow("Process Region", image)
             cv2.waitKey(1)
+        elif not data.scan:
+            mod.cliProgress(data.percentage, "Video Segmentation")
     return master
-
