@@ -60,7 +60,7 @@ def findClosest(arr, target):
 def findLocalMin(poly, range_min, range_max):
     # Objective function
     def objective_function(x):
-        return poly(x)
+        return -1 * poly(x)
 
     # Find local minimum
     result = minimize_scalar(objective_function, bounds=(range_min, range_max), method='bounded')
@@ -95,3 +95,17 @@ def inside(poly, x, y):
     result = cv2.pointPolygonTest(poly, (x, y), False)  # Use cv2.pointPolygonTest to check if the point is inside the polygon
 
     return result >= 0 # result > 0: inside, result = 0: on the edge, result < 0: outside
+
+def drawProgressBar(img, progress, bar_height, bar_color, text_color, font, font_scale, thickness):
+    # Draw the progress bar
+    img_height, img_width = img.shape[:2]
+    bar_width = int(img_width * progress)
+    cv2.rectangle(img, (0, 0), (bar_width, bar_height), bar_color, -1)
+
+    # Put the progress text
+    text = f"{int(progress * 100)}%"
+    text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+    text_x = (img_width - text_size[0]) // 2
+    text_y = (bar_height + text_size[1]) // 2
+    cv2.putText(img, text, (text_x, text_y +1), font, font_scale, bar_color, thickness + 3)
+    cv2.putText(img, text, (text_x, text_y +1), font, font_scale, text_color, thickness)

@@ -11,11 +11,13 @@ class Ball:
 
 class LaneCord:
     def __init__(self, ball, data):
+        matrix = cv2.getPerspectiveTransform(data.croppedPoly, data.bssmDimArr)
+        realMatrix = cv2.getPerspectiveTransform(data.croppedPoly, data.laneDimArr)
         point = np.float32([[ball.x, ball.y]])  # 2D point
         point = point.reshape(1, -1, 2)  # Reshaping to (1, N, 2) format for perspectiveTransform
 
-        transformedPoint = cv2.perspectiveTransform(point, data.matrix)
-        realTransformedPoint = cv2.perspectiveTransform(point, data.realMatrix)
+        transformedPoint = cv2.perspectiveTransform(point, matrix)
+        realTransformedPoint = cv2.perspectiveTransform(point, realMatrix)
         
         # Assigning transformed coordinates directly
         self.bssmx, self.bssmy = 2457 - transformedPoint[0][0][1], transformedPoint[0][0][0]
@@ -40,8 +42,8 @@ class Shot:
         self.entryBoard = self.calculateBoard(self.polyReal, 671)
         self.launchAng = self.calculateAng(self.polyReal, 0, 1)
         self.impactAng = self.calculateAng(self.polyReal, 671, -1)
-        self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 350, 670, 1.0, data)
-        self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 350, 1.0, data)
+        self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.78, data)
+        self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.75, data)
         self.pts = pts  # Storing the processed points for potential future use
 
     @staticmethod
@@ -81,7 +83,7 @@ class Shot:
             return "ERR1"
         
         # Calculate and return the break point board and distance
-        break_pt_board = '%.1f' % (39 - miny)
+        break_pt_board = '%.1f' % (39 + miny)
         break_pt_distance = '%.1f' % (minx * SCALEFACTOR)
         return break_pt_board, break_pt_distance
 
@@ -115,11 +117,9 @@ class Shot:
         timehours = (pts[endIndex].frame - pts[startIndex].frame) * FRAMESTOHOURS
         if timehours < 0:
             timehours = (pts[endIndex].frame + (data.frameCount - pts[startIndex].frame)) * FRAMESTOHOURS
-        print("Time:", timehours)
         distancemiles = mod.arcLength(poly, startx, endx) * BOARDSTOMILES
-        print("Distance:", distancemiles)
 
         if timehours == 0:
             return "ERR3"
 
-        return '%.1f' % ((distancemiles / timehours)*(671/773))
+        return '%.1f' % ((distancemiles / timehours)*multiplier)
