@@ -69,7 +69,7 @@ def captureBuffer(data):
         os.makedirs(directory)
 
     processVideo(".temp.mp4", fileName)
-    cropVid("output.mp4", "output_cropped.mp4", 40, 25, data)
+    cropVid(fileName, ".output_cropped.mp4", 40, 25, data)
     data.done = True
 
 def cropVid(inputPath, outputPath, startRemove, endRemove, data):
