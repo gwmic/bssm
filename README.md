@@ -1,7 +1,5 @@
 # 🎳 Bowling Segmentation Stat Manager (BSSM) 🎳
 
-## 👋 Hello
-
 This is the repository for BSSM.
 
 ## 💻 Getting Started
@@ -46,5 +44,5 @@ Replace `your_api_key_here` with your Roboflow API key. [Learn how to retrieve y
 To use bssm, run the following command:
 
 ```bash
-python3 core.py
+python3 bssm.py
 ```
