@@ -46,6 +46,10 @@ def clickEvent(event, x, y, flags, data):
                 '''
                 print("\nREADY")
 
+class Curve:
+  def __init__(self, arr):
+    self.arr = arr
+
 def bssm(data):
     image = cv2.imread("background.png")
     recentShot = data.shotArr[-1]
@@ -59,9 +63,16 @@ def bssm(data):
 
     curveReshaped = curve.reshape(-1, 2)
     curve = np.array([curveReshaped], dtype=np.int32)
+    curveObj = Curve(curve)
+
+    data.curveArr = np.append(data.curveArr, curveObj)
 
     # Draw the curve on the image
-    image = cv2.polylines(image, [curve], False, (252, 255, 63), 2)
+    for i in range(np.size(data.curveArr)):
+        if i == np.size(data.curveArr) - 1:
+            image = cv2.polylines(image, data.curveArr[i].arr, False, (252, 255, 63), 2)
+        else:
+            image = cv2.polylines(image, data.curveArr[i].arr, False, (255, 255, 255), 2)
 
     # Draw information for previous shots
     for idx, shot in enumerate(data.shotArr[:-1]):
