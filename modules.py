@@ -4,15 +4,15 @@ from scipy.integrate import quad
 from scipy.optimize import minimize_scalar
 import re
 
-def putCentered(img, text, center, font, font_scale, color, thickness):
+def putCentered(img, text, center, font, fontScale, color, thickness):
     # Get the text size
-    text_size, _ = cv2.getTextSize(text, font, font_scale, thickness)
+    textSize, _ = cv2.getTextSize(text, font, fontScale, thickness)
     # Calculate the bottom-left corner of the text
-    text_x = center[0] - text_size[0] // 2
-    text_y = center[1] + text_size[1] // 2
+    textx = center[0] - textSize[0] // 2
+    texty = center[1] + textSize[1] // 2
 
     # Put the text on the image
-    cv2.putText(img, text, (text_x, text_y), font, font_scale, color, thickness)
+    cv2.putText(img, text, (textx, texty), font, fontScale, color, thickness)
 
 def drawShotInfo(image, shot, ycord, num):
     if ycord < 900:
@@ -46,42 +46,42 @@ def arcLength(poly, a, b):
     return length
 
 def findClosest(arr, target):
-    closest_index = 0
-    min_diff = float('inf')
+    closestIndex = 0
+    minDiff = float('inf')
     
     for i, value in enumerate(arr):
         diff = abs(value - target)
-        if diff < min_diff:
-            min_diff = diff
-            closest_index = i
+        if diff < minDiff:
+            minDiff = diff
+            closestIndex = i
 
-    return closest_index
+    return closestIndex
 
-def findLocalMin(poly, range_min, range_max):
+def findLocalMin(poly, rangeMin, rangeMax):
     # Objective function
     def objective_function(x):
         return -1 * poly(x)
 
     # Find local minimum
-    result = minimize_scalar(objective_function, bounds=(range_min, range_max), method='bounded')
+    result = minimize_scalar(objective_function, bounds=(rangeMin, rangeMax), method='bounded')
 
     if result.success:
         return result.x, result.fun
     else:
         return None, None
     
-def tan(poly, x_point):
+def tan(poly, xPoint):
     # Derivative of the polynomial
     derivative = np.polyder(poly)
 
-    # Slope of the tangent at x_point
-    slope = derivative(x_point)
+    # Slope of the tangent at xPoint
+    slope = derivative(xPoint)
 
     # Angle of the tangent from the horizontal line
-    angle_radians = np.arctan(slope)
-    angle_degrees = np.degrees(angle_radians)
+    angleRadians = np.arctan(slope)
+    angleDegrees = np.degrees(angleRadians)
 
-    return angle_degrees
+    return angleDegrees
 
 def extractframe(predictions):
     match = re.search(r"'frame_id': (\d+)", str(predictions))  # Regular expression to find "frame:" followed by an integer
@@ -96,21 +96,34 @@ def inside(poly, x, y):
 
     return result >= 0 # result > 0: inside, result = 0: on the edge, result < 0: outside
 
-def drawProgressBar(img, progress, bar_height, bar_color, text_color, font, font_scale, thickness):
+def drawProgressBar(img, progress, barHeight, barColor, textColor, font, fontScale, thickness):
     # Draw the progress bar
-    img_height, img_width = img.shape[:2]
-    bar_width = int(img_width * progress)
-    cv2.rectangle(img, (0, 0), (bar_width, bar_height), bar_color, -1)
+    _, imgWidth = img.shape[:2]
+    barWidth = int(imgWidth * progress)
+    cv2.rectangle(img, (0, 0), (barWidth, barHeight), barColor, -1)
 
     # Put the progress text
     text = f"{int(progress * 100)}%"
-    text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
-    text_x = (img_width - text_size[0]) // 2
-    text_y = (bar_height + text_size[1]) // 2
-    cv2.putText(img, text, (text_x, text_y +1), font, font_scale, bar_color, thickness + 3)
-    cv2.putText(img, text, (text_x, text_y +1), font, font_scale, text_color, thickness)
+    textSize = cv2.getTextSize(text, font, fontScale, thickness)[0]
+    textx = (imgWidth - textSize[0]) // 2
+    texty = (barHeight + textSize[1]) // 2
+    cv2.putText(img, text, (textx, texty), font, fontScale, barColor, thickness + 3)
+    cv2.putText(img, text, (textx, texty), font, fontScale, textColor, thickness)
 
 def cliProgress(percentage, string):
-    filled_length = int(50 * percentage)
-    bar = '█' * filled_length + '-' * (50 - filled_length)
+    filledLength = int(50 * percentage)
+    bar = '█' * filledLength + '-' * (50 - filledLength)
     print(f"\r{string}: |{bar}| {(percentage*100):.2f}%", end='\r') # save the progress bar with percentage
+
+def findArea(poly, x1, x2):
+    # Calculate the area under the polynomial curve
+    areaCurve, _ = quad(poly, x1, x2)
+
+    # Calculate the area of the trapezoid
+    y1, y2 = poly(x1), poly(x2)
+    areaTrapezoid = 0.5 * (y1 + y2) * (x2 - x1)
+
+    # The enclosed area is the difference between the two
+    enclosedArea = areaCurve - areaTrapezoid
+
+    return enclosedArea
