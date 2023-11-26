@@ -8,49 +8,6 @@ import time
 import supervision as sv
 import shot as st
 import callables
-import oilheatmap as ohm
-
-def clickEvent(event, x, y, flags, data):
-    if event == cv2.EVENT_LBUTTONDOWN:  # Checking for left mouse clicks 
-        # Collecting points for lane class
-        if data.count < 4:
-            setattr(data, f'x{data.count+1}', x)
-            setattr(data, f'y{data.count+1}', y)
-            print(f"{data.clickArr[data.count]}: ({x}, {y})")
-            data.count += 1
-
-            if data.count == 4:
-                # Once all points are collected, perform further processing
-                data.laneArr = np.array([[data.x1, data.y1], [data.x2, data.y2], 
-                                         [data.x4, data.y4], [data.x3, data.y3], 
-                                         [data.x1, data.y1]], np.int32)
-
-                quadArr = [(data.x1, data.y1), (data.x2, data.y2), 
-                           (data.x4, data.y4), (data.x3, data.y3)]
-                data.bssmDimArr = np.float32([[0, 0], [183, 0], [183, 2457], [0, 2457]])  
-                data.laneDimArr = np.float32([[0, 0], [39, 0], [39, 671], [0, 671]])  
-               
-                # Convert the quadrilateral and point into a format suitable for cv2 functions
-                data.poly = np.float32(quadArr)
-                data.laneSet = True
-
-                data.frameLimit = data.frameRender
-                
-                data.fps = 30
-                vb.cropVid("shots/2023_11_24/15_43/shot3.mp4", ".output_cropped.mp4", 40, 20, data)
-                customMaster = masterWrapper(data)
-                inference.Stream(
-                    source=".output_cropped.mp4",
-                    model="bowling-model/6",
-                    confidence=0.1,
-                    iou_threshold=0.01,
-                    output_channel_order="BGR",
-                    use_main_thread=True,
-                    on_prediction=customMaster,
-                    enforce_fps=True
-                )
-                
-                print("\nREADY")
 
 def renderWrapper(data):
     def render(predictions, image):
@@ -108,7 +65,7 @@ def renderWrapper(data):
             # Draw lane and set callback if lane not defined
             image = cv2.polylines(image, [data.laneArr], False, (0, 165, 255), 3)
         else:
-            cv2.setMouseCallback("Camera", clickEvent, data)
+            cv2.setMouseCallback("Camera", callables.clickEvent, data)
             data.frameRender = frame
 
             # Annotate and display image
@@ -135,7 +92,7 @@ def masterWrapper(data):
             cap = cv2.VideoCapture(".output_cropped.mp4")
             data.frameCount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             data.frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)/2)
-            #print("\n")
+            print("\n")
         elif not data.scan:
             data.percentage = min(frame / (data.frameCount - 2), 1.0)
 
