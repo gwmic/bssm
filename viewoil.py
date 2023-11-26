@@ -1,16 +1,22 @@
 import matplotlib.pyplot as plt
 import pickle
+import sys
 
-with open('oildistribution.pkl', 'rb') as file:
-    coords = pickle.load(file)
+if len(sys.argv) > 1:
+    pklFile = str(sys.argv[1])
 
-X, Y, Z = coords.X, coords.Y, coords.Z
+    with open(pklFile, 'rb') as file:
+        coords = pickle.load(file)
 
-# Plotting the heatmap
-plt.figure(figsize=(8, 6))
-plt.contourf(X, Y, Z, levels=100, cmap="cool")
-plt.colorbar(label='Tangential Acceleration')
-plt.xlabel('Board')
-plt.ylabel('Feet')
-plt.title('Oil Distribution')
-plt.show()
+    X, Y, Z = coords.X, coords.Y, coords.Z
+
+    # Plotting the heatmap
+    plt.figure(figsize=(8, 6))
+    plt.contourf(X, Y, Z, levels=100, cmap="cool")
+    plt.colorbar(label='Tangential Acceleration')
+    plt.xlabel('Board')
+    plt.ylabel('Feet')
+    plt.title('Oil Distribution')
+    plt.show()
+else:
+    print("specify file")
