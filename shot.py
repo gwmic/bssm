@@ -46,6 +46,7 @@ class Shot:
             self.impactAng = self.calculateAng(self.polyReal, 671, -1)
             self.launchSpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.73, data)
             self.entrySpeed = self.calculateSpeed(pts, self.polyReal, xReal, 30, 670, 0.71, data)
+            self.spare = self.calculateSpare(self.polyReal, data)
             self.pts = pts  # Storing the processed points for potential future use
 
     @staticmethod
@@ -125,3 +126,11 @@ class Shot:
             return "ERR3"
 
         return '%.1f' % ((distancemiles / timehours)*multiplier)
+    
+    @staticmethod
+    def calculateSpare(poly, data):
+        area = mod.findArea(poly, 0, 671)
+        if area >= data.spareArea:
+            return False
+        else:
+            return True
