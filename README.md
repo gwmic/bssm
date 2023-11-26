@@ -41,8 +41,14 @@ Replace `your_api_key_here` with your Roboflow API key. [Learn how to retrieve y
 
 ## 🎬 Run BSSM
 
-To use bssm, run the following command:
+To use bssm run the following command:
 
 ```bash
 python3 bssm.py
+```
+
+After five strike shot's have been recorded an oil ditribution map will be generated as `oildistribution.pkl`. Run the following command to view the map:
+
+```bash
+python3 viewoil.py
 ```
