@@ -8,8 +8,8 @@ import wrappers
 SOURCE = 1 # Source num of webcam
 SHOW_PROCESS = True # Toggle the processing annotations; turning off saves 30% time vs. on
 CONFIDENCE_LIVE = 0.15 # Confidence for infernce on live vid feed to detect shot; value ranges from 0 to 1.0
-CONFIDENCE_PROCESS = 0.0145 # Confidence for infernce on cropped shots to be processed into data; value ranges from 0 to 1.0
-SPARE_DETECTION_FACTOR = 0.01 # Maximum Percent of lane enclosed by the the shot curve of a spare; value ranges from 0 to 1.0
+CONFIDENCE_PROCESS = 0.45 # Confidence for infernce on cropped shots to be processed into data; value ranges from 0 to 1.0
+SPARE_DETECTION_FACTOR = 0.1 # Maximum Percent of lane enclosed by the the shot curve of a spare; value ranges from 0 to 1.0
 
 # manages all global data as data object
 class DataMan:
