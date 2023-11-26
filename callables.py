@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import modules as mod
+import oilheatmap as ohm
 
 # Called when a button is cliked by setMouseCallback in render function
 def clickEvent(event, x, y, flags, data):
@@ -28,22 +29,7 @@ def clickEvent(event, x, y, flags, data):
                 data.laneSet = True
 
                 data.frameLimit = data.frameRender
-                '''
-                data.fps = 30
-                vb.processVideo('output_test.mp4', 'output.mp4')
-                vb.cropVid("output.mp4", "output_cropped.mp4", 40, 25, data)
-                customMaster = masterWrapper(data)
-                inference.Stream(
-                    source="output_cropped.mp4",
-                    model="bowling-model/6",
-                    confidence=0.1,
-                    iou_threshold=0.01,
-                    output_channel_order="BGR",
-                    use_main_thread=True,
-                    on_prediction=customMaster,
-                    enforce_fps=True
-                )
-                '''
+
                 print("\nREADY")
 
 class Curve:
@@ -67,12 +53,19 @@ def bssm(data):
 
     data.curveArr = np.append(data.curveArr, curveObj)
 
-    # Draw the curve on the image
+    # Draw the curves on the image
     for i in range(np.size(data.curveArr)):
+        # Determine the color based on the condition
         if i == np.size(data.curveArr) - 1:
-            image = cv2.polylines(image, data.curveArr[i].arr, False, (252, 255, 63), 2)
+            if recentShot.spare:
+                color = (0, 0, 255)  # Red for the last element if a spare
+            else:
+                color = (252, 255, 63)  # Blue for the recnt shot
         else:
-            image = cv2.polylines(image, data.curveArr[i].arr, False, (255, 255, 255), 2)
+            color = (255, 255, 255)  # White for old shots
+
+        # Draw the polyline with the determined color
+        image = cv2.polylines(image, data.curveArr[i].arr, False, color, 2)
 
     # Draw information for previous shots
     for idx, shot in enumerate(data.shotArr[:-1]):
@@ -81,9 +74,17 @@ def bssm(data):
     # Draw the most recent shot's information
     mod.drawShotInfo(image, recentShot, 173, np.size(data.shotArr))
 
+    # After displaying the spare's stats — remove it, so it won't be displayed on the chart
+    if recentShot.spare:
+        data.shotArr = data.shotArr[:-1]
+        data.curveArr = data.curveArr[:-1]
+
     # Update the y-coordinate for the next shot
     data.currentY += 86
 
     # Display the updated image
     cv2.imshow("BSSM", image)
     cv2.waitKey(1)
+
+    if np.size(data.shotArr) >= 5:
+        ohm.heatMap(data.shotArr)
