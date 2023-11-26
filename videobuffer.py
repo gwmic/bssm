@@ -21,8 +21,6 @@ def captureBuffer(data):
 
     # Initialize the webcam
     cap = cv2.VideoCapture(data.source)
-    if data.fps == 0:
-        data.fps = cap.get(cv2.CAP_PROP_FPS)  # Get the FPS of the webcam
     frame_size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     # Initialize the buffer
@@ -60,9 +58,9 @@ def captureBuffer(data):
     dateTime = datetime.now()
     dateStr = dateTime.strftime("%Y_%m_%d")
     if data.timeStr == "null":
-        timeStr = dateTime.strftime("%H_%M")
+        data.timeStr = dateTime.strftime("%H_%M")
     shotNum = np.size(data.shotArr) + 1
-    directory = f"shots/{dateStr}/{timeStr}"
+    directory = f"shots/{dateStr}/{data.timeStr}"
     fileName = f"{directory}/shot{shotNum}.mp4"
 
     # Check if the directory exists, and if not, create it
@@ -70,7 +68,7 @@ def captureBuffer(data):
         os.makedirs(directory)
 
     processVideo(".temp.mp4", fileName)
-    cropVid(fileName, ".output_cropped.mp4", 40, 25, data)
+    cropVid(fileName, ".output_cropped.mp4", 40, 20, data)
     data.done = True
 
 def cropVid(inputPath, outputPath, startRemove, endRemove, data):
@@ -122,7 +120,7 @@ def cropVid(inputPath, outputPath, startRemove, endRemove, data):
             out.write(croppedFrame)
 
             # Calculate and update progress
-            progress = (((i - startRemove) / (totalFrames - startRemove - endRemove))*(4/7) + (3/7))
+            progress = (((i - startRemove) / (totalFrames - startRemove - endRemove))*(3/7) + (4/7))
             mod.cliProgress(progress, "Video Preprocess")
 
 
@@ -142,7 +140,7 @@ def processVideo(input_file, output_file):
 
     # Get total number of frames and frame rate
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_rate = cap.get(cv2.CAP_PROP_FPS)
+    frame_rate = 30
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
@@ -169,7 +167,7 @@ def processVideo(input_file, output_file):
     # Write the last 60 frames to the start of the new video
     for frame_index, frame in enumerate(last_60_frames):
         out.write(frame)
-        mod.cliProgress(((frame_index + 1) / total_frames)*(3/7), "Video Preprocess")
+        mod.cliProgress(((frame_index + 1) / total_frames)*(4/7), "Video Preprocess")
 
     # Reset to the start of the video
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -179,13 +177,13 @@ def processVideo(input_file, output_file):
         ret, frame = cap.read()
         if ret:
             out.write(frame)
-            mod.cliProgress(((i + 61) / total_frames)*(3/7), "Video Preprocess")
+            mod.cliProgress(((i + 61) / total_frames)*(4/7), "Video Preprocess")
         else:
             print("Error reading frame.")
             break
 
     # Final progress update to ensure 100% is shown at the end
-    mod.cliProgress(3/7, "Video Preprocess")
+    mod.cliProgress(4/7, "Video Preprocess")
 
     # Release everything
     cap.release()
