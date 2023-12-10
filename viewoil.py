@@ -19,4 +19,4 @@ if len(sys.argv) > 1:
     plt.title('Oil Distribution')
     plt.show()
 else:
-    print("specify file")
+    print("Please specify file: viewoil.py <path to file>")

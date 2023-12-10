@@ -3,6 +3,8 @@ import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import minimize_scalar
 import re
+import mastergui as gui
+
 
 def putCentered(img, text, center, font, fontScale, color, thickness):
     # Get the text size
@@ -13,6 +15,7 @@ def putCentered(img, text, center, font, fontScale, color, thickness):
 
     # Put the text on the image
     cv2.putText(img, text, (textx, texty), font, fontScale, color, thickness)
+
 
 def drawShotInfo(image, shot, ycord, num):
     if ycord < 900:
@@ -26,12 +29,15 @@ def drawShotInfo(image, shot, ycord, num):
         else:
             color = (0, 0, 0)
 
-        putCentered(image, str(num), (126, ycord), cv2.FONT_HERSHEY_SIMPLEX, 1.7, (255, 255, 255), 4)
+        putCentered(image, str(num), (126, ycord),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.7, (255, 255, 255), 4)
 
         # Iterate over the attributes and display them
         for i, attribute in enumerate(attributes):
             xcord = 382 + i * 256
-            putCentered(image, str(attribute), (xcord, ycord), cv2.FONT_HERSHEY_SIMPLEX, 1.7, color, 3)
+            putCentered(image, str(attribute), (xcord, ycord),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.7, color, 3)
+
 
 def arcLength(poly, a, b):
     # Derivative of the polynomial
@@ -45,10 +51,11 @@ def arcLength(poly, a, b):
     length, _ = quad(integrand, a, b)
     return length
 
+
 def findClosest(arr, target):
     closestIndex = 0
     minDiff = float('inf')
-    
+
     for i, value in enumerate(arr):
         diff = abs(value - target)
         if diff < minDiff:
@@ -57,19 +64,22 @@ def findClosest(arr, target):
 
     return closestIndex
 
+
 def findLocalMin(poly, rangeMin, rangeMax):
     # Objective function
     def objective_function(x):
         return -1 * poly(x)
 
     # Find local minimum
-    result = minimize_scalar(objective_function, bounds=(rangeMin, rangeMax), method='bounded')
+    result = minimize_scalar(objective_function, bounds=(
+        rangeMin, rangeMax), method='bounded')
 
     if result.success:
         return result.x, result.fun
     else:
         return None, None
-    
+
+
 def tan(poly, xPoint):
     # Derivative of the polynomial
     derivative = np.polyder(poly)
@@ -83,18 +93,12 @@ def tan(poly, xPoint):
 
     return angleDegrees
 
-def extractframe(predictions):
-    match = re.search(r"'frame_id': (\d+)", str(predictions))  # Regular expression to find "frame:" followed by an integer
-
-    if match:
-        return int(match.group(1))  # Extract and return the integer
-    else:
-        return -1  # Return -1 if no frame is found
-    
 def inside(poly, x, y):
-    result = cv2.pointPolygonTest(poly, (x, y), False)  # Use cv2.pointPolygonTest to check if the point is inside the polygon
+    # Use cv2.pointPolygonTest to check if the point is inside the polygon
+    result = cv2.pointPolygonTest(poly, (x, y), False)
 
-    return result >= 0 # result > 0: inside, result = 0: on the edge, result < 0: outside
+    return result >= 0  # result > 0: inside, result = 0: on the edge, result < 0: outside
+
 
 def drawProgressBar(img, progress, barHeight, barColor, textColor, font, fontScale, thickness):
     # Draw the progress bar
@@ -107,13 +111,19 @@ def drawProgressBar(img, progress, barHeight, barColor, textColor, font, fontSca
     textSize = cv2.getTextSize(text, font, fontScale, thickness)[0]
     textx = (imgWidth - textSize[0]) // 2
     texty = (barHeight + textSize[1]) // 2
-    cv2.putText(img, text, (textx, texty), font, fontScale, barColor, thickness + 3)
-    cv2.putText(img, text, (textx, texty), font, fontScale, textColor, thickness)
+    cv2.putText(img, text, (textx, texty), font,
+                fontScale, barColor, thickness + 3)
+    cv2.putText(img, text, (textx, texty), font,
+                fontScale, textColor, thickness)
 
-def cliProgress(percentage, string):
-    filledLength = int(50 * percentage)
-    bar = '█' * filledLength + '-' * (50 - filledLength)
-    print(f"\r{string}: |{bar}| {(percentage*100):.2f}%", end='\r') # save the progress bar with percentage
+
+def cliProgress(percentage, string, data):
+    filledLength = int(30 * percentage)
+    bar = '+' * filledLength + '-' * (30 - filledLength)
+
+    # save the progress bar with percentage
+    gui.printGui(f"{string}: |{bar}| {(percentage*100):.2f}%", data)  
+
 
 def findArea(poly, x1, x2):
     # Calculate the area under the polynomial curve
@@ -127,3 +137,35 @@ def findArea(poly, x1, x2):
     enclosedArea = areaCurve - areaTrapezoid
 
     return enclosedArea
+
+def extractFrame(input_file, output_file, frame_number):
+    # Capture the video from the input file
+    cap = cv2.VideoCapture(input_file)
+
+    # Check if the video opened successfully
+    if not cap.isOpened():
+        print("Error: Unable to open the input file.")
+        return
+
+    # Get video properties
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    frame_rate = cap.get(cv2.CAP_PROP_FPS)
+
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID' if mp4v doesn't work
+    out = cv2.VideoWriter(output_file, fourcc, frame_rate, (frame_width, frame_height))
+
+    # Set the frame position and read the frame
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: Unable to read the frame.")
+        return
+
+    # Write the frame to the output file
+    out.write(frame)
+
+    # Release everything
+    cap.release()
+    out.release()
