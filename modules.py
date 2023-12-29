@@ -93,7 +93,7 @@ def tan(poly, xPoint):
 
     return angleDegrees
 
-def inside(poly, x, y):
+def  inside(poly, x, y):
     # Use cv2.pointPolygonTest to check if the point is inside the polygon
     result = cv2.pointPolygonTest(poly, (x, y), False)
 
@@ -124,19 +124,6 @@ def cliProgress(percentage, string, data):
     # save the progress bar with percentage
     gui.printGui(f"{string}: |{bar}| {(percentage*100):.2f}%", data)  
 
-
-def findArea(poly, x1, x2):
-    # Calculate the area under the polynomial curve
-    areaCurve, _ = quad(poly, x1, x2)
-
-    # Calculate the area of the trapezoid
-    y1, y2 = poly(x1), poly(x2)
-    areaTrapezoid = 0.5 * (y1 + y2) * (x2 - x1)
-
-    # The enclosed area is the difference between the two
-    enclosedArea = areaCurve - areaTrapezoid
-
-    return enclosedArea
 
 def extractFrame(input_file, output_file, frame_number):
     # Capture the video from the input file

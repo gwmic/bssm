@@ -19,54 +19,60 @@ SHOW_PROCESS = False
 CONFIDENCE_LIVE = 0.3
 # Confidence for infernce on cropped shots to be processed into data; value ranges from 0 to 1.0
 CONFIDENCE_PROCESS = 0.1
-# Maximum Percent of lane enclosed by the the shot curve of a spare; value ranges from 0 to 1.0
-SPARE_DETECTION_FACTOR = 0.10
 # Rate of frames that will be scanned; if n is selected then every n frames will be scanned (must be a natural number)
 SCAN_RATE = 2
 # Toggle saving each shot as an mp4 to /shot; Turning off saves storage
 SAVE_SHOTS = False
 
-# manages all global data as data object
+'''
+data instance of DataManager manages all global data
+'''
 class DataManager:
-    def __init__(self, source, showProcess, confidenceLive, confidenceProcess, spareFactor, scanRate, saveShots):
-        self.annotator = sv.BoxAnnotator() 
-        self.spareArea = spareFactor * 39 * 671
-        self.currentY = 173
+    def __init__(self, source, showProcess, confidenceLive, confidenceProcess, scanRate, saveShots):
+        # Initilize all attributes with argumnets 
+        self.confidenceLive, self.confidenceProcess = confidenceLive, confidenceProcess
         self.source = source
         self.showProcess = showProcess
         self.scanRate = scanRate
         self.saveShots = saveShots
-        self.timeStr = "null"
-        self.fps = 30
-        self.list = self.predict = None
-        self.processing = self.running = True
-        self.buttons = []
-        self.window = {}
-        self.predictions = np.array([])
+
+        # Initilize all string attributes
         self.printText = "Welcome to BSSM - Click The Top Left Corner of The Lane to Begin"
-        self.selection = 1
-        self.dragging = self.activeBowler = self.oldBowler = self.upNext = -1 
-        self.done = threading.Event()
-        
         self.clickArr = ["1/4 Top Left", "2/4 Top Right",
                          "3/4 Bottom Left", "4/4 Bottom Right"]
-        self.confidenceLive, self.confidenceProcess = confidenceLive, confidenceProcess
+        self.timeStr = "null"
 
-        # Initialize all array attributes to empty numpy arrays
+        # Initialize all array and dictionarie attributes to empty
         self.ballArr = self.laneArr = self.bowlerArr = self.shotLimit = self.output_cropped = np.array([])
-        self.laneDimArr = self.bssmDimArr = self.poly = np.array([])
+        self.laneDimArr = self.bssmDimArr = self.poly = self.predictions = np.array([])
         self.croppedPoly = self.croppedLaneArr = self._curveArr = self.rackArr = np.array([])
+        self.buttons = []
+        self.window = {}
 
         # Initialize all boolean flags
         self.laneSet = self.vidFlag = self.scan = self.displayOil = self.running = False
+        self.processing = self.running = True
 
-        # Initialize all counter attributes to zero
+        # Initialize all int attributes
         self.count = self.x1 = self.x2 = self.x3 = self.x4 = self.start_x = self.start_y = self.fps = 0
         self.percentage = self.y1 = self.y2 = self.y3 = self.y4 = self.frameWidth = self.bowlerCount = 0
         self.frameLimit = self.frameCount = self.frameRender = self.ballCount = self.size = 0
+        self.dragging = self.activeBowler = self.oldBowler = self.upNext = -1 
+        self.currentY = 173
+        self.selection = 1
+        self.fps = 30
+
+        # Initilize all other attributes
+        self.annotator = sv.BoxAnnotator() 
+        self.done = threading.Event()
+        self.list = self.predict = None
 
     @property
     def shotArr(self):
+        '''
+        When ShotArr is called, the shot array for the up next
+        bowler is called from the bowlerArr
+        '''
         if self.list is None or self.upNext is None:
             return np.array([])
         return self.bowlerArr[str(self.list[self.upNext])]
@@ -77,6 +83,10 @@ class DataManager:
     
     @property
     def curveArr(self):
+        '''
+        When CurveArr is called, the curve array for the active
+        bowler is called from the private attribute _curveArr
+        '''
         if self.activeBowler == -1:
             return np.array([np.array([])])
         return self._curveArr[self.activeBowler]
@@ -87,10 +97,12 @@ class DataManager:
 
 # initilize data with constants
 data = DataManager(SOURCE, SHOW_PROCESS, CONFIDENCE_LIVE,
-                   CONFIDENCE_PROCESS, SPARE_DETECTION_FACTOR,
-                   SCAN_RATE, SAVE_SHOTS)
+                   CONFIDENCE_PROCESS, SCAN_RATE, SAVE_SHOTS)
 
-#Check sys.argv 
+
+'''
+Create the bowlerArr from sys.argv
+'''
 correctFormat = True
 l = len(sys.argv)
 if l == 1:
@@ -143,7 +155,9 @@ data.predict = InferencePipeline.init(
 data.predict.start(use_main_thread=False)
 
 # set gui to update until program is stopped
+data.running = False
 while True:
+   print(data.running)
    gui.renderGui(data)
    if data.running == False:
        break

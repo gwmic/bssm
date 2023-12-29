@@ -70,12 +70,14 @@ def renderGui(data):
     BUTTON_WIDTH, BUTTON_HEIGHT = 150, 60
 
     if not data.running:
+        print("here")
         data.start_x = WINDOW_WIDTH - UI_WIDTH + BORDER_BUFFER
         data.start_y = WINDOW_HEIGHT - UI_HEIGHT + BORDER_BUFFER
         for i in range(data.bowlerCount):
             x = data.start_x + i * (BUTTON_WIDTH + BORDER_BUFFER)
             y = data.start_y
             data.buttons.append((x, y, BUTTON_WIDTH, BUTTON_HEIGHT))
+            print("added button")
         data.running = True
 
     key = cv2.waitKey(1) & 0xFF

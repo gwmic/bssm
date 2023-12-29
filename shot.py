@@ -146,14 +146,6 @@ class Shot:
             return "ERR3"
 
         return '%.1f' % ((distancemiles / timehours)*multiplier)
-
-    @staticmethod
-    def calculateSpare(poly, data):
-        area = mod.findArea(poly, 0, 671)
-        if area >= data.spareArea:
-            return False
-        else:
-            return True
         
     @staticmethod
     def calculateFinishFrame(pts, xReal):
